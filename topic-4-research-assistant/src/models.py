@@ -11,6 +11,7 @@ from typing import Literal
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
+from typing import Generic, TypeVar
 
 
 # ============================================================
@@ -36,12 +37,13 @@ class Citation(BaseModel):
 # ============================================================
 # Cache Entry
 # ============================================================
+T = TypeVar("T")
 
 class CacheEntry(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     key: str
-    value: dict
+    value: T
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     ttl_seconds: int = 86_400

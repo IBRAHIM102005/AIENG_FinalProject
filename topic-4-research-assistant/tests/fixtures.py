@@ -7,10 +7,11 @@ Design goals:
 - Centralized service initialization
 """
 
+
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -21,41 +22,36 @@ from src.services.cache import CacheService
 
 
 # ============================================================
-# Fake AI Client (deterministic test double)
+# FakeAIClient — deterministic stub (no MagicMock)
 # ============================================================
 
 class FakeAIClient:
     """
-    Minimal deterministic replacement for AIClient.
+    Typed test double for the AIClient protocol.
 
-    Each method is an AsyncMock so tests can control:
-    - return_value (success path)
-    - side_effect (errors / timeouts)
+    Attributes are plain AsyncMocks so each test can set
+    return_value / side_effect without touching internals.
     """
 
-    def __init__(self, overrides: Dict[str, Any] | None = None) -> None:
-        overrides = overrides or {}
-
-        self.fetch_wikipedia = AsyncMock()
-        self.fetch_arxiv = AsyncMock()
-        self.fetch_web = AsyncMock()
-        self.synthesize = AsyncMock()
-
-        # optional preconfiguration
-        for key, value in overrides.items():
-            if hasattr(self, key):
-                getattr(self, key).return_value = value
+    def __init__(
+        self,
+        *,
+        wikipedia: list[Any] | None = None,
+        arxiv: list[Any] | None = None,
+        web: list[Any] | None = None,
+        synthesize_return: Any = None,
+    ) -> None:
+        self.fetch_wikipedia: AsyncMock = AsyncMock(return_value=wikipedia or [])
+        self.fetch_arxiv: AsyncMock = AsyncMock(return_value=arxiv or [])
+        self.fetch_web: AsyncMock = AsyncMock(return_value=web or [])
+        self.synthesize: AsyncMock = AsyncMock(return_value=synthesize_return)
 
 
 # ============================================================
-# Settings Factory (pytest-friendly)
+# Settings factory
 # ============================================================
 
-@pytest.fixture
-def test_settings(tmp_path: Path) -> Settings:
-    """
-    Creates isolated Settings instance for each test run.
-    """
+def make_settings(tmp_path: Path) -> Settings:
     return Settings(
         llm_provider="anthropic",
         llm_model="claude-sonnet-4-6",
@@ -70,7 +66,7 @@ def test_settings(tmp_path: Path) -> Settings:
 
 
 # ============================================================
-# Core Fixtures
+# Pytest fixtures (importable via conftest or direct import)
 # ============================================================
 
 @pytest.fixture
@@ -80,28 +76,15 @@ def fake_client() -> FakeAIClient:
 
 @pytest.fixture
 def ai_service(fake_client: FakeAIClient) -> AIService:
-    """
-    AIService with fully mocked dependencies.
-    No real network calls possible.
-    """
     return AIService(client=fake_client)
 
 
 @pytest.fixture
 def file_cache(tmp_path: Path) -> CacheService:
-    """
-    Disk-backed cache used for integration-level tests.
-    """
     return CacheService(cache_dir=tmp_path / "cache", ttl_seconds=3600)
 
 
 @pytest.fixture
-def cache_service(tmp_path: Path) -> CacheService:
-    """
-    Unified cache fixture (recommended over memory_cache naming).
-
-    NOTE:
-    This is NOT true in-memory cache.
-    It's file-backed but isolated per test.
-    """
-    return CacheService(cache_dir=tmp_path / "cache", ttl_seconds=3600)
+def memory_cache(tmp_path: Path) -> CacheService:
+    """In-memory-style cache backed by a temp dir; TTL large enough not to expire mid-test."""
+    return CacheService(cache_dir=tmp_path / "mem_cache", ttl_seconds=3600)

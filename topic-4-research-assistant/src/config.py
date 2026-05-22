@@ -8,6 +8,7 @@ Handles environment loading, validation, and runtime-safe settings access.
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal, Optional
@@ -150,6 +151,34 @@ class Settings(BaseSettings):
         }
         return key_map.get(self.web_search_provider)
 
+    # =========================
+    # ENVIRON BRIDGE
+    # =========================
+    def export_to_environ(self) -> None:
+        """
+        Export settings values into os.environ so that the ai/ package layer
+        (which calls os.getenv() directly) can read them.
+
+        pydantic-settings reads .env into this Settings object but does NOT
+        write those values back to os.environ.  The ai/ providers — which we
+        must not modify — rely on os.getenv("OPENAI_API_KEY") etc., so we
+        bridge the gap here.  Only sets keys that are not already present so
+        that real environment variables always take precedence.
+        """
+        bridge: dict[str, str | None] = {
+            "LLM_PROVIDER":          self.llm_provider,
+            "LLM_MODEL":             self.llm_model,
+            "OPENAI_API_KEY":        self.openai_api_key,
+            "ANTHROPIC_API_KEY":     self.anthropic_api_key,
+            "GOOGLE_API_KEY":        self.google_api_key,
+            "WEB_SEARCH_PROVIDER":   self.web_search_provider,
+            "TAVILY_API_KEY":        self.tavily_api_key,
+            "SERPER_API_KEY":        self.serper_api_key,
+        }
+        for key, value in bridge.items():
+            if value is not None and key not in os.environ:
+                os.environ[key] = value
+
 
 # =========================
 # SINGLETON ACCESS
@@ -158,5 +187,8 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """
     Returns cached application settings instance.
+    Also bridges .env values into os.environ for the ai/ package layer.
     """
-    return Settings()
+    settings = Settings()
+    settings.export_to_environ()
+    return settings

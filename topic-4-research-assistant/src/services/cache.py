@@ -23,8 +23,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Generic, TypeVar, cast
 
-import aiofiles
-
 from src.config import get_settings
 from src.models import CacheEntry
 
@@ -91,8 +89,7 @@ class CacheService(Generic[T]):
             return None
 
         try:
-            async with aiofiles.open(path, encoding="utf-8") as f:
-                raw = json.loads(await f.read())
+            raw = json.loads(await asyncio.to_thread(path.read_text, encoding="utf-8"))
 
             entry = CacheEntry.model_validate(raw)
 
@@ -134,8 +131,7 @@ class CacheService(Generic[T]):
 
             try:
                 # Write temp file first
-                async with aiofiles.open(tmp_path, "w", encoding="utf-8") as f:
-                    await f.write(entry.model_dump_json())
+                await asyncio.to_thread(tmp_path.write_text, entry.model_dump_json(), encoding="utf-8")
 
                 # Atomic replace
                 await asyncio.to_thread(os.replace, tmp_path, path)

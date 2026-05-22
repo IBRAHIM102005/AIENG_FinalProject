@@ -1,6 +1,6 @@
-
-
 .env
+.env.*
+!.env.example
 .venv/
 venv/
 __pycache__/
@@ -9,4 +9,3 @@ __pycache__/
 .coverage
 htmlcov/
 .cache/
->>>>>>> 477478c8ad04a8ece86d97214017b6be769cba4e

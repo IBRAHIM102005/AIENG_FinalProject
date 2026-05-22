@@ -72,10 +72,6 @@ class Settings(BaseSettings):
             raise ValueError("llm_model cannot be empty")
         return v
 
-    # Runtime initialization hook
-    def model_post_init(self, __context: Any) -> None:
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-
     def ensure_cache_dir(self) -> None:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -94,6 +90,14 @@ class Settings(BaseSettings):
             )
 
         return key
+
+    def active_web_search_api_key(self) -> str | None:
+        key_map = {
+            "tavily": self.tavily_api_key,
+            "serper": self.serper_api_key,
+            "duckduckgo": None,
+        }
+        return key_map.get(self.web_search_provider)
 
 
 @lru_cache(maxsize=1)

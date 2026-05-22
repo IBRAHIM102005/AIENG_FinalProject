@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,43 +28,57 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # LLM configuration
-    llm_provider: Literal["anthropic", "openai", "gemini"] = Field(default="anthropic")
-    llm_model: str = Field(default="claude-sonnet-4-6")
+    # =========================
+    # LLM CONFIGURATION
+    # =========================
+    llm_provider: Literal["anthropic", "openai", "gemini"] = "anthropic"
+    llm_model: str = "claude-sonnet-4-6"
 
-    anthropic_api_key: str | None = None
-    openai_api_key: str | None = None
-    google_api_key: str | None = None
+    anthropic_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    google_api_key: Optional[str] = None
 
-    # Web search configuration
-    web_search_provider: Literal["tavily", "serper", "duckduckgo"] = Field(default="tavily")
-    tavily_api_key: str | None = None
-    serper_api_key: str | None = None
+    # =========================
+    # WEB SEARCH CONFIGURATION
+    # =========================
+    web_search_provider: Literal["tavily", "serper", "duckduckgo"] = "tavily"
 
-    # Runtime parameters
-    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(default="INFO")
+    tavily_api_key: Optional[str] = None
+    serper_api_key: Optional[str] = None
 
-    cache_dir: Path = Field(default=Path(".cache"))
-    cache_ttl_seconds: int = Field(default=86_400, ge=0)
+    # =========================
+    # RUNTIME CONFIG
+    # =========================
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+
+    cache_dir: Path = Path(".cache")
+    cache_ttl_seconds: int = Field(default=86400, ge=0)
 
     per_source_timeout_seconds: float = Field(default=10.0, gt=0)
     max_sources_per_query: int = Field(default=3, ge=1, le=10)
-    max_question_length: int = Field(default=1_000, gt=0)
+    max_question_length: int = Field(default=1000, gt=0)
 
-    # Retry policy
+    # =========================
+    # RETRY POLICY
+    # =========================
     retry_max_attempts: int = Field(default=3, ge=1)
     retry_min_wait_seconds: float = Field(default=1.0, ge=0)
     retry_max_wait_seconds: float = Field(default=30.0, ge=1)
 
-    # Concurrency control
+    # =========================
+    # CONCURRENCY
+    # =========================
     concurrency_semaphore_limit: int = Field(default=5, ge=1)
 
+    # =========================
+    # VALIDATORS
+    # =========================
     @field_validator("cache_dir", mode="before")
     @classmethod
     def _coerce_cache_dir(cls, v: Any) -> Path:
         return Path(v)
 
-    @field_validator("llm_model", mode="after")
+    @field_validator("llm_model")
     @classmethod
     def _validate_model(cls, v: str) -> str:
         v = v.strip()
@@ -72,21 +86,58 @@ class Settings(BaseSettings):
             raise ValueError("llm_model cannot be empty")
         return v
 
+    # =========================
+    # RUNTIME HELPERS
+    # =========================
     def ensure_cache_dir(self) -> None:
+        """
+        Create cache directory if it does not exist.
+        Explicit call only (test-safe).
+        """
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
-    def active_api_key(self) -> str:
-        key_map = {
-            "anthropic": self.anthropic_api_key,
-            "openai": self.openai_api_key,
-            "gemini": self.google_api_key,
-        }
-
-        key = key_map.get(self.llm_provider)
+    # =========================
+    # API KEY RESOLUTION
+    # =========================
+    def active_llm_api_key(self) -> str:
+        """
+        Returns active LLM API key based on provider.
+        """
+        if self.llm_provider == "anthropic":
+            key = self.anthropic_api_key
+        elif self.llm_provider == "openai":
+            key = self.openai_api_key
+        elif self.llm_provider == "gemini":
+            key = self.google_api_key
+        else:
+            raise RuntimeError(f"Unsupported LLM provider: {self.llm_provider}")
 
         if not key:
             raise RuntimeError(
-                f"Missing API key for provider: {self.llm_provider}"
+                f"Missing API key for LLM provider: {self.llm_provider}"
+            )
+
+        return key
+
+    def active_search_api_key(self) -> str:
+        """
+        Returns API key for search provider.
+        DuckDuckGo does not require a key.
+        """
+        if self.web_search_provider == "tavily":
+            key = self.tavily_api_key
+        elif self.web_search_provider == "serper":
+            key = self.serper_api_key
+        elif self.web_search_provider == "duckduckgo":
+            return ""
+        else:
+            raise RuntimeError(
+                f"Unsupported search provider: {self.web_search_provider}"
+            )
+
+        if not key:
+            raise RuntimeError(
+                f"Missing API key for search provider: {self.web_search_provider}"
             )
 
         return key
@@ -100,6 +151,9 @@ class Settings(BaseSettings):
         return key_map.get(self.web_search_provider)
 
 
+# =========================
+# SINGLETON ACCESS
+# =========================
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     """

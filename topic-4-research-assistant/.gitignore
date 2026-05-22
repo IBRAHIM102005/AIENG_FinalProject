@@ -36,3 +36,4 @@ artefacts/*.log
 artefacts/*.png
 artefacts/*.csv
 !artefacts/README.md
+!artefacts/demo_offline.txt

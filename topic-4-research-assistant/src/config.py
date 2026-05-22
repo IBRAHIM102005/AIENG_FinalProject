@@ -142,6 +142,14 @@ class Settings(BaseSettings):
 
         return key
 
+    def active_web_search_api_key(self) -> str | None:
+        key_map = {
+            "tavily": self.tavily_api_key,
+            "serper": self.serper_api_key,
+            "duckduckgo": None,
+        }
+        return key_map.get(self.web_search_provider)
+
 
 # =========================
 # SINGLETON ACCESS

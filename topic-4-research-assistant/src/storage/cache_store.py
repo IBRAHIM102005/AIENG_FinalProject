@@ -1,37 +1,37 @@
-"""
+﻿"""
 src/storage/cache_store.py
 ==========================
 SQLite-backed persistent cache store for the Async Research Assistant.
 
 Design decisions
 ----------------
-* **SQLite** — zero-dependency persistent storage.  The ``cache_dir`` is
+* **SQLite** â€” zero-dependency persistent storage.  The ``cache_dir`` is
   configurable so the Dockerfile can mount it as a named volume without
   baking a path into the image.
-* **WAL mode + busy_timeout** — Write-Ahead Logging allows concurrent reads
+* **WAL mode + busy_timeout** â€” Write-Ahead Logging allows concurrent reads
   during a write.  ``busy_timeout`` prevents ``SQLITE_BUSY`` from crashing
   the async pipeline when two coroutines write simultaneously.
-* **Thread-safe by lock** — ``asyncio`` tasks run on the event-loop thread
+* **Thread-safe by lock** â€” ``asyncio`` tasks run on the event-loop thread
   but ``run_in_executor`` calls can land on the thread-pool.  A single
   ``threading.Lock`` makes every write atomic without requiring connection-per-
   thread overhead.
-* **Parameterised queries everywhere** — no f-string SQL; no injection surface.
-* **Context-manager + open/close** — deterministic resource cleanup regardless
+* **Parameterised queries everywhere** â€” no f-string SQL; no injection surface.
+* **Context-manager + open/close** â€” deterministic resource cleanup regardless
   of how the caller manages lifetime (context manager, DI container, fixture).
-* **``CacheEntry`` compatible** — ``put_entry()`` / ``get_entry()`` helpers
-  convert between the ``CacheEntry`` dataclass (Üzv A's ``src/models.py``) and
+* **``CacheEntry`` compatible** â€” ``put_entry()`` / ``get_entry()`` helpers
+  convert between the ``CacheEntry`` dataclass (Ãœzv A's ``src/models.py``) and
   the flat SQLite row, so ``cache.py`` never has to think about columns.
 
 Architecture position
 ---------------------
 ::
 
-    cache.py (service, Üzv A)
-        │
-        ▼
-    CacheStore  ──►  SQLite file (.cache/researcher.db)
-        │
-        ▼
+    cache.py (service, Ãœzv A)
+        â”‚
+        â–¼
+    CacheStore  â”€â”€â–º  SQLite file (.cache/researcher.db)
+        â”‚
+        â–¼
     SessionRepository (same connection, different table)
 
 Both the cache entries and the session records live in the same SQLite file
@@ -51,7 +51,7 @@ from typing import Any, Generator
 
 logger = logging.getLogger(__name__)
 
-# DDL — query_cache table
+# DDL â€” query_cache table
 
 _DDL_CACHE = """\
 CREATE TABLE IF NOT EXISTS query_cache (
@@ -76,12 +76,12 @@ _DDL_INDEX_CACHED_AT = (
 
 
 class CacheStore:
-    """Low-level SQLite persistence for ``(source, query) → results`` cache.
+    """Low-level SQLite persistence for ``(source, query) â†’ results`` cache.
 
     Parameters
     ----------
     db_path:
-        Path to the SQLite file.  Use ``":memory:"`` for tests — the database
+        Path to the SQLite file.  Use ``":memory:"`` for tests â€” the database
         is discarded when the connection closes.
     default_ttl:
         Default TTL in seconds applied to new entries when no per-entry TTL is
@@ -106,14 +106,14 @@ class CacheStore:
         self._lock = threading.Lock()
         self._conn: sqlite3.Connection | None = None
 
-    
+
     # Lifecycle
-    
+
 
     def open(self) -> "CacheStore":
         """Open (or create) the database, configure pragmas, initialise schema.
 
-        Idempotent — calling twice returns the same instance without
+        Idempotent â€” calling twice returns the same instance without
         reopening the connection.
 
         Returns
@@ -157,12 +157,12 @@ class CacheStore:
             try:
                 self._conn.close()
                 logger.debug("Cache database closed.")
-            except sqlite3.Error:  # pragma: no cover — close rarely fails
+            except sqlite3.Error:  # pragma: no cover â€” close rarely fails
                 pass
             finally:
                 self._conn = None
 
-    # Context-manager protocol 
+    # Context-manager protocol
 
     def __enter__(self) -> "CacheStore":
         return self.open()
@@ -170,9 +170,9 @@ class CacheStore:
     def __exit__(self, *_: Any) -> None:
         self.close()
 
-    
+
     # Internal helpers
-    
+
 
     def _apply_pragmas(self) -> None:
         """Configure connection pragmas for performance and safety."""
@@ -219,9 +219,9 @@ class CacheStore:
             )
         return self._conn
 
-    
-    # Public API — write
-    
+
+    # Public API â€” write
+
 
     def put(
         self,
@@ -365,9 +365,9 @@ class CacheStore:
         logger.debug("Cache cleared: %d rows removed.", count)
         return count
 
-    
-    # Public API — read
-    
+
+    # Public API â€” read
+
 
     def get(
         self,
@@ -497,12 +497,12 @@ class CacheStore:
             ).fetchone()[0]
         return {"total": total, "expired": expired, "live": total - expired}
 
-    
+
     # CacheEntry bridge helpers
-    
+
 
     def put_entry(self, entry: Any) -> None:
-        """Persist a ``CacheEntry`` model instance (Üzv A's models.py).
+        """Persist a ``CacheEntry`` model instance (Ãœzv A's models.py).
 
         Accepts any object that has ``source``, ``query``, ``results``,
         ``cached_at`` (datetime or str), and ``ttl_seconds`` attributes.
@@ -512,7 +512,7 @@ class CacheStore:
         Parameters
         ----------
         entry:
-            Duck-typed CacheEntry — any object with the five required attributes.
+            Duck-typed CacheEntry â€” any object with the five required attributes.
 
         Raises
         ------

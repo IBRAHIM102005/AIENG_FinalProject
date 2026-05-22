@@ -8,8 +8,9 @@ Scope:
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
-from freezegun import freeze_time
 
 from src.models import CacheEntry
 
@@ -49,24 +50,28 @@ class TestCacheEntryExpiration:
         entry = CacheEntry(key="k", value=[], ttl_seconds=0)
         assert not entry.is_expired()
 
-    @freeze_time("2024-01-01 12:00:00")
     def test_entry_expires_after_ttl(self) -> None:
         """
-        Entry created at 10:00 with TTL=1h.
-        At 12:00 it should be expired.
+        Entry created more than one hour ago with TTL=1h should be expired.
         """
-        with freeze_time("2024-01-01 10:00:00"):
-            entry = CacheEntry(key="k", value=[], ttl_seconds=3600)
+        entry = CacheEntry(
+            key="k",
+            value=[],
+            ttl_seconds=3600,
+            created_at=datetime.now(timezone.utc) - timedelta(hours=2),
+        )
 
         assert entry.is_expired()
 
-    @freeze_time("2024-01-01 10:00:30")
     def test_entry_still_valid_within_ttl(self) -> None:
         """
-        Entry created at 10:00 with TTL=1h.
-        At 10:00:30 it should still be valid.
+        Entry created less than one hour ago with TTL=1h should still be valid.
         """
-        with freeze_time("2024-01-01 10:00:00"):
-            entry = CacheEntry(key="k", value=[], ttl_seconds=3600)
+        entry = CacheEntry(
+            key="k",
+            value=[],
+            ttl_seconds=3600,
+            created_at=datetime.now(timezone.utc) - timedelta(seconds=30),
+        )
 
         assert not entry.is_expired()

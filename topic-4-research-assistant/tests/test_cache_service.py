@@ -83,10 +83,10 @@ class TestFileCacheService:
 
         # simplified corruption simulation at read level
         with pytest.MonkeyPatch().context() as mp:
-            async def fake_read(*args, **kwargs):
+            def fake_read(*args, **kwargs):
                 raise ValueError("invalid json")
 
-            mp.setattr("src.services.cache.aiofiles.open", lambda *a, **k: fake_read)
+            mp.setattr(Path, "read_text", fake_read)
 
             result = await file_cache.get("web", "test")
 

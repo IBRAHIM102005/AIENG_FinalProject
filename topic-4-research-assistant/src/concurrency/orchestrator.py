@@ -11,6 +11,8 @@ from typing import Any
 
 from ai import Source, fetch_arxiv, fetch_web, fetch_wikipedia
 
+from src.services.cache import CacheService
+
 logger = logging.getLogger(__name__)
 
 SourceName = str
@@ -80,6 +82,7 @@ async def fetch_selected_sources(
     semaphore_limit: int = 3,
     fetchers: Mapping[SourceName, Fetcher] | None = None,
     client: Any = None,
+    cache: CacheService[list[dict[str, Any]]] | None = None,
 ) -> OrchestrationResult:
     """Fetch selected sources concurrently with per-source timeouts.
 
@@ -97,7 +100,7 @@ async def fetch_selected_sources(
         raise ValueError("semaphore_limit must be at least 1")
 
     selected = normalize_sources(sources)
-    active_fetchers = dict(DEFAULT_FETCHERS if fetchers is None else fetchers)
+    active_fetchers = dict(fetchers or DEFAULT_FETCHERS)
     missing = [name for name in selected if name not in active_fetchers]
     if missing:
         raise ValueError(f"missing fetcher(s): {', '.join(missing)}")
@@ -107,6 +110,14 @@ async def fetch_selected_sources(
     async def run_one(name: SourceName) -> tuple[SourceName, list[Source] | Exception, float]:
         started = time.perf_counter()
         try:
+            if cache is not None:
+                cached = await cache.get(name, question)
+                if cached is not None:
+                    result = [Source.model_validate(item) for item in cached]
+                    elapsed = time.perf_counter() - started
+                    logger.info("source_fetch_cache_hit source=%s count=%s elapsed=%.3f", name, len(result), elapsed)
+                    return name, result, elapsed
+
             async with semaphore:
                 result = await asyncio.wait_for(
                     active_fetchers[name](
@@ -116,6 +127,8 @@ async def fetch_selected_sources(
                     ),
                     timeout=per_source_timeout,
                 )
+            if cache is not None:
+                await cache.set(name, question, [source.model_dump() for source in result])
             elapsed = time.perf_counter() - started
             logger.info("source_fetch_ok source=%s count=%s elapsed=%.3f", name, len(result), elapsed)
             return name, result, elapsed
@@ -143,4 +156,3 @@ async def fetch_selected_sources(
             combined.append(source)
 
     return OrchestrationResult(sources=combined, failures=failures, timings=timings)
-

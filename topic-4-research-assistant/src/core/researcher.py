@@ -3,24 +3,27 @@
 from __future__ import annotations
 
 import logging
+import asyncio
 import time
 from collections.abc import Awaitable, Callable, Iterable, Mapping
 from dataclasses import dataclass, field
+from functools import partial
 from typing import Any
 
 from ai import AnswerWithCitations, Source, synthesize
 from ai.providers.base import LLMProvider
 
+from src.config import get_settings
 from src.concurrency.orchestrator import (
     Fetcher,
     OrchestrationResult,
     SourceFailure,
     fetch_selected_sources,
 )
+from src.services.cache import CacheService
 
 logger = logging.getLogger(__name__)
 
-MAX_QUESTION_LENGTH = 500
 Synthesizer = Callable[..., AnswerWithCitations]
 Orchestrator = Callable[..., Awaitable[OrchestrationResult]]
 
@@ -42,8 +45,9 @@ def validate_question(question: str) -> str:
     cleaned = " ".join(question.split())
     if not cleaned:
         raise ValueError("question must be non-empty")
-    if len(cleaned) > MAX_QUESTION_LENGTH:
-        raise ValueError(f"question must be at most {MAX_QUESTION_LENGTH} characters")
+    max_question_length = get_settings().max_question_length
+    if len(cleaned) > max_question_length:
+        raise ValueError(f"question must be at most {max_question_length} characters")
     return cleaned
 
 
@@ -64,6 +68,7 @@ async def research_question(
     llm: LLMProvider | None = None,
     fetchers: Mapping[str, Fetcher] | None = None,
     client: Any = None,
+    cache: CacheService[list[dict[str, Any]]] | None = None,
     orchestrator: Orchestrator = fetch_selected_sources,
     synthesizer: Synthesizer = synthesize,
 ) -> ResearchResult:
@@ -80,13 +85,26 @@ async def research_question(
         semaphore_limit=semaphore_limit,
         fetchers=fetchers,
         client=client,
+        cache=cache,
     )
     if not orchestration.sources:
         failed = ", ".join(f"{f.source}: {f.error}" for f in orchestration.failures)
         detail = f" Source failures: {failed}" if failed else ""
         raise RuntimeError(f"no sources were retrieved.{detail}")
 
-    answer = synthesizer(cleaned_question, orchestration.sources, llm=llm)
+    for failure in orchestration.failures:
+        logger.warning(
+            "research_source_failure source=%s elapsed=%.3f error=%s",
+            failure.source,
+            failure.elapsed_seconds,
+            failure.error,
+        )
+
+    loop = asyncio.get_running_loop()
+    answer = await loop.run_in_executor(
+        None,
+        partial(synthesizer, cleaned_question, orchestration.sources, llm=llm),
+    )
     answer = sanitize_answer_text(answer)
     elapsed = time.perf_counter() - started
 

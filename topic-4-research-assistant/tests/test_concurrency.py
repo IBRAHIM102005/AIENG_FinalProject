@@ -30,6 +30,18 @@ async def _slow(query: str, *, max_results: int = 3, client=None) -> list[Source
     return []
 
 
+class _MemoryCache:
+    def __init__(self, payload: list[dict] | None = None) -> None:
+        self.payload = payload
+        self.writes: list[tuple[str, str, list[dict]]] = []
+
+    async def get(self, source: str, query: str) -> list[dict] | None:
+        return self.payload
+
+    async def set(self, source: str, query: str, value: list[dict]) -> None:
+        self.writes.append((source, query, value))
+
+
 def test_normalize_sources_accepts_aliases_and_dedupes():
     assert normalize_sources(["wiki", "arxiv", "wikipedia"]) == ("wikipedia", "arxiv")
 
@@ -63,4 +75,28 @@ async def test_fetch_selected_sources_applies_per_source_timeout():
 
     assert len(result.sources) == 1
     assert result.failures[0].source == "wikipedia"
+
+
+@pytest.mark.asyncio
+async def test_fetch_selected_sources_uses_cache_before_fetcher():
+    cached_source = Source(
+        title="Cached result",
+        url="https://example.com/cached",
+        snippet="Already cached.",
+        origin="web",
+    )
+    cache = _MemoryCache([cached_source.model_dump()])
+
+    async def _should_not_run(query: str, *, max_results: int = 3, client=None) -> list[Source]:
+        raise AssertionError("fetcher should not run on cache hit")
+
+    result = await fetch_selected_sources(
+        "photosynthesis",
+        sources=["web"],
+        fetchers={"web": _should_not_run},
+        cache=cache,
+    )
+
+    assert result.sources == [cached_source]
+    assert result.failures == []
 

@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 
 import click
 
 from ai import AnswerWithCitations
 
+from src.config import get_settings
 from src.core.researcher import ResearchResult, research_question
 from src.offline import OfflineLLM, offline_fetchers
+from src.services.cache import CacheService
 
 
 def _split_sources(value: str | None) -> list[str] | None:
@@ -43,7 +44,7 @@ def render_answer(result: ResearchResult) -> str:
 def cli() -> None:
     """Async research assistant."""
 
-    logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
+    logging.basicConfig(level=get_settings().log_level)
 
 
 @cli.command()
@@ -52,18 +53,24 @@ def cli() -> None:
 @click.option(
     "--limit",
     type=int,
-    default=lambda: int(os.getenv("MAX_SOURCES_PER_QUERY", "3")),
+    default=lambda: get_settings().max_sources_per_query,
     show_default="env/default",
 )
 @click.option(
     "--timeout",
     type=float,
-    default=lambda: float(os.getenv("PER_SOURCE_TIMEOUT_SECONDS", "10")),
+    default=lambda: get_settings().per_source_timeout_seconds,
     show_default="env/default",
     help="Per-source timeout in seconds.",
 )
-@click.option("--concurrency", default=3, show_default=True, help="Maximum concurrent source fetches.")
-@click.option("--no-cache", is_flag=True, help="Accepted for compatibility; cache is owned by service layer.")
+@click.option(
+    "--concurrency",
+    type=int,
+    default=lambda: get_settings().concurrency_semaphore_limit,
+    show_default="env/default",
+    help="Maximum concurrent source fetches.",
+)
+@click.option("--no-cache", is_flag=True, help="Bypass the source cache.")
 @click.option("--offline", is_flag=True, help="Use deterministic fake sources and fake LLM.")
 def ask(
     question: str,
@@ -76,8 +83,9 @@ def ask(
 ) -> None:
     """Answer QUESTION with cited research sources."""
 
-    del no_cache
     try:
+        settings = get_settings()
+        cache = None if no_cache else CacheService(cache_dir=settings.cache_dir, ttl_seconds=settings.cache_ttl_seconds)
         result = asyncio.run(
             research_question(
                 question,
@@ -87,6 +95,7 @@ def ask(
                 semaphore_limit=concurrency,
                 fetchers=offline_fetchers() if offline else None,
                 llm=OfflineLLM() if offline else None,
+                cache=cache,
             )
         )
     except Exception as exc:

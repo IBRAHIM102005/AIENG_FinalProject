@@ -39,10 +39,10 @@ I used AI coding assistants as follows:
 
 | Module / file | Assistant | What I did with it |
 |---|---|---|
-| `src/services/ai_service.py` | Claude | Drafted initial retry decorator skeleton; rewrote jitter logic and FailoverAIClient chaos behavior manually after testing. |
-| `src/concurrency/orchestrator.py` | Claude | Suggested asyncio.gather pattern; hand-wrote semaphore logic, timeout handling, and graceful degradation. |
-| `tests/test_core.py` | Claude | Suggested parametrized test structure; reviewed, kept ~60%, wrote all edge cases (Unicode, concurrency, TTL) manually. |
-| `src/storage/cache_store.py` | Claude | WAL mode and UPSERT syntax suggested; wrote transaction management, threading.Lock, and context manager protocol myself. |
+| `src/services/ai_service.py` | AI assistant | Drafted initial retry decorator skeleton; rewrote jitter logic and FailoverAIClient chaos behavior manually after testing. |
+| `src/concurrency/orchestrator.py` | AI assistant | Suggested asyncio.gather pattern; hand-wrote semaphore logic, timeout handling, and graceful degradation. |
+| `tests/test_core.py` | AI assistant | Suggested parametrized test structure; reviewed, kept ~60%, wrote all edge cases (Unicode, concurrency, TTL) manually. |
+| `src/storage/cache_store.py` | AI assistant | WAL mode and UPSERT syntax suggested; wrote transaction management, threading.Lock, and context manager protocol myself. |
 
 I affirm that I **can defend every line of code** in this repository during the oral defense.
 

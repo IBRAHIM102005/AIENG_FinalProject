@@ -15,7 +15,7 @@ Role in the architecture
                                                      CacheStore (SQLite)
 
 The repository is the *only* module that deals with SQL for session records.
-``researcher.py`` (Üzv B) receives and returns ``ResearchSession`` dataclass
+``researcher.py`` receives and returns ``ResearchSession`` dataclass
 instances; it never sees a cursor or a row.  This enforces clean architecture:
 persistence is separated from business logic, and the repository can be
 swapped for a PostgreSQL or in-memory implementation without touching any
@@ -94,7 +94,7 @@ class ResearchSession:
 
     This is the **domain object** passed between the storage, business-logic,
     and CLI layers.  It is intentionally a stdlib ``@dataclass`` (not Pydantic)
-    so the storage layer has zero dependency on Pydantic.  Üzv A's
+    so the storage layer has zero dependency on Pydantic.  The
     ``src/models.py`` Pydantic model can be converted to/from this dataclass
     trivially.
 
@@ -227,7 +227,7 @@ class SessionRepository:
         records live in the same SQLite file.  The repository does **not**
         open or close the store; that lifecycle belongs to the caller.
 
-    Integration notes for Üzv B
+    Integration notes
     ----------------------------
     * ``researcher.py`` receives a ``SessionRepository`` via dependency
       injection (constructor parameter or function argument).

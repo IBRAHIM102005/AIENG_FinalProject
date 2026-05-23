@@ -1,7 +1,7 @@
 """
 tests/test_core.py
 ==================
-Comprehensive test suite for the storage layer (Üzv C responsibilities).
+Comprehensive test suite for the storage layer (storage layer tests).
 
 Coverage strategy
 -----------------

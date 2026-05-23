@@ -6,10 +6,10 @@ Shared pytest fixtures for the Async Research Assistant test suite.
 This file is loaded automatically by pytest before any test module runs.
 All fixtures defined here are available to:
 
-    * tests/test_core.py         (Üzv C — storage & repository tests)
-    * tests/test_services.py     (Üzv A — cache service, ai_service tests)
-    * tests/test_concurrency.py  (Üzv B — orchestrator tests)
-    * tests/test_end_to_end.py   (Üzv B — full pipeline tests)
+    * tests/test_core.py         (storage & repository tests)
+    * tests/test_services.py     (cache service, ai_service tests)
+    * tests/test_concurrency.py  (orchestrator tests)
+    * tests/test_end_to_end.py   (full pipeline tests)
     * tests/test_ai_smoke.py     (provided — do not modify)
 
 Fixture catalogue
@@ -419,7 +419,7 @@ def fake_web() -> FakeWebSearch:
 
 
 # Async mock fetcher fixtures
-# (used by test_concurrency.py and test_end_to_end.py — Üzv B)
+# (used by test_concurrency.py and test_end_to_end.py )
 
 
 @pytest.fixture()

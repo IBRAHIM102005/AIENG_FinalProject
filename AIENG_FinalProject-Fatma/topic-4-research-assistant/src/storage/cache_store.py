@@ -19,14 +19,14 @@ Design decisions
 * **Context-manager + open/close** — deterministic resource cleanup regardless
   of how the caller manages lifetime (context manager, DI container, fixture).
 * **``CacheEntry`` compatible** — ``put_entry()`` / ``get_entry()`` helpers
-  convert between the ``CacheEntry`` dataclass (Üzv A's ``src/models.py``) and
+  convert between the ``CacheEntry`` dataclass (src/models.py) and
   the flat SQLite row, so ``cache.py`` never has to think about columns.
 
 Architecture position
 ---------------------
 ::
 
-    cache.py (service, Üzv A)
+    cache.py (service layer)
         │
         ▼
     CacheStore  ──►  SQLite file (.cache/researcher.db)
@@ -502,7 +502,7 @@ class CacheStore:
     
 
     def put_entry(self, entry: Any) -> None:
-        """Persist a ``CacheEntry`` model instance (Üzv A's models.py).
+        """Persist a ``CacheEntry`` model instance (src/models.py).
 
         Accepts any object that has ``source``, ``query``, ``results``,
         ``cached_at`` (datetime or str), and ``ttl_seconds`` attributes.

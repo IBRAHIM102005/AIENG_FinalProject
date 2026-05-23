@@ -1,0 +1,111 @@
+# .gitignore — Async Research Assistant
+# Python 3.12+  |  Docker  |  SQLite  |  VS Code / JetBrains
+
+# Secrets — NEVER commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Python byte-compiled / optimised / extension files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# SQLite databases (runtime data — stored via Docker volumes or local .cache)
+*.db
+*.sqlite
+*.sqlite3
+.cache/
+
+# Logs
+*.log
+logs/
+
+# Testing
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+htmlcov/
+.hypothesis/
+.pytest_cache/
+nosetests.xml
+
+# Type checkers
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+
+# Linters / formatters
+.ruff_cache/
+
+# Benchmark / demo artefacts
+# These are gitignored by default; commit specific ones for submission.
+artefacts/*.json
+artefacts/*.txt
+artefacts/*.log
+artefacts/*.png
+artefacts/*.csv
+!artefacts/README.md    # keep the placeholder committed
+
+# IDE — VS Code
+.vscode/
+!.vscode/extensions.json
+
+# IDE — JetBrains (PyCharm, IntelliJ, etc.)
+.idea/
+*.iml
+*.iws
+out/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.fuse_hidden*
+
+# Docker local overrides
+docker-compose.override.yml

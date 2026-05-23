@@ -84,6 +84,8 @@ RUN mkdir -p /app/.cache /app/logs \
 
 USER appuser
 
+EXPOSE 8000
+
 # ---- Healthcheck ----------------------------------------------------
 # Validates the storage layer is importable and SQLite is functional.
 HEALTHCHECK --interval=60s --timeout=10s --start-period=5s --retries=2 \
@@ -99,6 +101,8 @@ CMD ["python", "-m", "src.cli", "--help"]
 # Build and run:
 #   docker build -t finalproj .
 #   docker run --env-file .env finalproj                 # CLI mode
+#   docker run --env-file .env -p 8000:8000 finalproj \
+#       uvicorn src.api:app --host 0.0.0.0 --port 8000
 #
 # Verify before submission:
 #   docker run --env-file .env finalproj pytest tests/test_ai_smoke.py

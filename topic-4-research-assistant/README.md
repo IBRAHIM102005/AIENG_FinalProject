@@ -40,6 +40,31 @@ Useful options:
 - `--no-cache`
 - `--offline`
 
+## Web Demo
+
+Start the API and browser UI:
+
+```powershell
+uvicorn src.api:app --host 0.0.0.0 --port 8000
+```
+
+Open:
+
+```text
+http://localhost:8000
+```
+
+The same research pipeline is available through JSON:
+
+```powershell
+curl -X POST http://localhost:8000/api/research `
+  -H "Content-Type: application/json" `
+  -d "{\"question\":\"What is quantum computing?\",\"sources\":[\"wiki\",\"arxiv\"],\"limit\":2,\"offline\":true}"
+```
+
+Use `offline=true` for deterministic demos without API keys, or leave it false
+to use the live providers configured in `.env`.
+
 ## Benchmark And Demo
 
 Compare sequential and parallel source fetching:
@@ -96,6 +121,8 @@ TOTAL 864 statements, 187 missed, 78% coverage
 - `src/concurrency/orchestrator.py`: async source fetching with semaphore and timeout.
 - `src/core/researcher.py`: research workflow and synthesis.
 - `src/cli.py`: Click command line interface.
+- `src/api.py`: FastAPI backend for the browser demo.
+- `src/web/`: static browser UI for interactive demonstrations.
 - `src/storage/cache_store.py`: SQLite cache storage.
 - `src/storage/repository.py`: persisted research sessions.
 
@@ -116,4 +143,10 @@ Use an env file for live provider calls:
 
 ```powershell
 docker run --rm --env-file .env async-research-assistant
+```
+
+Run the web demo in Docker:
+
+```powershell
+docker run --rm --env-file .env -p 8000:8000 async-research-assistant uvicorn src.api:app --host 0.0.0.0 --port 8000
 ```

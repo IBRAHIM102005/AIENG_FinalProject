@@ -22,7 +22,6 @@ def _make_openai_client(api_key: str | None):
         raise ProviderError(
             "The `openai` package is required. Install with `pip install openai`."
         ) from e
-    if os.getenv("AZURE_OPENAI_ENDPOINT"): return openai.AzureOpenAI(api_key=key, azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"), api_version="2024-12-01-preview")
     return openai.OpenAI(api_key=key)
 
 

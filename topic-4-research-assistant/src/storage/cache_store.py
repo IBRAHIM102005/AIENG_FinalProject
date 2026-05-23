@@ -1,38 +1,7 @@
 ﻿"""
 src/storage/cache_store.py
-==========================
+
 SQLite-backed persistent cache store for the Async Research Assistant.
-
-Design decisions
-----------------
-* **SQLite** â€” zero-dependency persistent storage.  The ``cache_dir`` is
-  configurable so the Dockerfile can mount it as a named volume without
-  baking a path into the image.
-* **WAL mode + busy_timeout** â€” Write-Ahead Logging allows concurrent reads
-  during a write.  ``busy_timeout`` prevents ``SQLITE_BUSY`` from crashing
-  the async pipeline when two coroutines write simultaneously.
-* **Thread-safe by lock** â€” ``asyncio`` tasks run on the event-loop thread
-  but ``run_in_executor`` calls can land on the thread-pool.  A single
-  ``threading.Lock`` makes every write atomic without requiring connection-per-
-  thread overhead.
-* **Parameterised queries everywhere** â€” no f-string SQL; no injection surface.
-* **Context-manager + open/close** â€” deterministic resource cleanup regardless
-  of how the caller manages lifetime (context manager, DI container, fixture).
-* **``CacheEntry`` compatible** â€” ``put_entry()`` / ``get_entry()`` helpers
-  convert between the ``CacheEntry`` dataclass (Ãœzv A's ``src/models.py``) and
-  the flat SQLite row, so ``cache.py`` never has to think about columns.
-
-Architecture position
----------------------
-::
-
-    cache.py (service, Ãœzv A)
-        â”‚
-        â–¼
-    CacheStore  â”€â”€â–º  SQLite file (.cache/researcher.db)
-        â”‚
-        â–¼
-    SessionRepository (same connection, different table)
 
 Both the cache entries and the session records live in the same SQLite file
 and share the same WAL journal for consistent ACID guarantees.
@@ -86,13 +55,6 @@ class CacheStore:
     default_ttl:
         Default TTL in seconds applied to new entries when no per-entry TTL is
         provided.  Mirrors ``CACHE_TTL_SECONDS`` from ``src/config.py``.
-
-    Example
-    -------
-    >>> with CacheStore(":memory:") as store:
-    ...     store.put("wikipedia", "photosynthesis", [{"title": "P", ...}])
-    ...     row = store.get("wikipedia", "photosynthesis")
-    ...     assert row is not None
     """
 
     def __init__(

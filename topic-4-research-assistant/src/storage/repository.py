@@ -3,44 +3,13 @@ src/storage/repository.py
 =========================
 Repository abstraction for ``ResearchSession`` persistence.
 
-Role in the architecture
-------------------------
-::
-
-    cli.py  ─────────────────────────────────────────────┐
-    orchestrator.py  ─────────────────────────────────►  │
-    researcher.py    ─────────────────────────────────►  SessionRepository
-                                                          │
-                                                          ▼
-                                                     CacheStore (SQLite)
-
-The repository is the *only* module that deals with SQL for session records.
-``researcher.py`` (Üzv B) receives and returns ``ResearchSession`` dataclass
+The repository is the only module that deals with SQL for session records.
+``researcher.py``  receives and returns ``ResearchSession`` dataclass
 instances; it never sees a cursor or a row.  This enforces clean architecture:
 persistence is separated from business logic, and the repository can be
 swapped for a PostgreSQL or in-memory implementation without touching any
 other module.
 
-Thread / async safety
----------------------
-``researcher.py`` and ``orchestrator.py`` are async.  All repository methods
-are **synchronous** to match the stdlib SQLite driver.  Wrap calls in
-``await asyncio.to_thread(repo.some_method, ...)`` when calling from an async
-context without blocking the event loop.
-
-The underlying ``CacheStore`` uses a ``threading.Lock`` so it is safe to call
-from ``asyncio.to_thread``.
-
-Example
--------
->>> from src.storage.cache_store import CacheStore
->>> from src.storage.repository import SessionRepository
->>> with CacheStore(":memory:") as store:
-...     repo = SessionRepository(store)
-...     s = repo.create_session("What is quantum entanglement?")
-...     repo.update_session(s.id, status="done", answer="...")
-...     loaded = repo.get_session(s.id)
-...     assert loaded.status == "done"
 """
 
 from __future__ import annotations
@@ -98,28 +67,6 @@ class ResearchSession:
     ``src/models.py`` Pydantic model can be converted to/from this dataclass
     trivially.
 
-    Attributes
-    ----------
-    id:
-        UUID4 string — primary key.  Generated automatically on construction.
-    question:
-        Original, stripped user question.
-    status:
-        One of ``"pending"`` → ``"running"`` → ``"done"`` | ``"error"``.
-    answer:
-        Synthesised answer text (``None`` until the session reaches ``done``).
-    citations:
-        List of citation dicts
-        (``{"index": int, "title": str, "url": str, "origin": str}``).
-    sources_used:
-        List of origin strings that contributed to the answer
-        (e.g. ``["wikipedia", "arxiv"]``).
-    error_msg:
-        Human-readable description when ``status == "error"``; ``None`` otherwise.
-    created_at:
-        ISO-8601 UTC timestamp, set at construction.
-    updated_at:
-        ISO-8601 UTC timestamp, updated on every status transition.
     """
 
     question:     str
@@ -227,16 +174,6 @@ class SessionRepository:
         records live in the same SQLite file.  The repository does **not**
         open or close the store; that lifecycle belongs to the caller.
 
-    Integration notes for Üzv B
-    ----------------------------
-    * ``researcher.py`` receives a ``SessionRepository`` via dependency
-      injection (constructor parameter or function argument).
-    * ``orchestrator.py`` may pass the repo down to ``researcher.py`` when it
-      creates a new research task.
-    * All methods are synchronous.  In an async context, wrap with
-      ``await asyncio.to_thread(repo.some_method, ...)``.
-    * ``RepositoryError`` is the only exception type callers need to handle
-      for database failures.
     """
 
     def __init__(self, store: CacheStore) -> None:

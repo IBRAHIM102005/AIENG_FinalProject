@@ -21,9 +21,7 @@ from src.services.ai_service import AIService
 from src.services.cache import CacheService
 
 
-# ============================================================
 # FakeAIClient — deterministic stub (no MagicMock)
-# ============================================================
 
 class FakeAIClient:
     """
@@ -47,9 +45,7 @@ class FakeAIClient:
         self.synthesize: AsyncMock = AsyncMock(return_value=synthesize_return)
 
 
-# ============================================================
 # Settings factory
-# ============================================================
 
 def make_settings(tmp_path: Path) -> Settings:
     return Settings(
@@ -65,9 +61,7 @@ def make_settings(tmp_path: Path) -> Settings:
     )
 
 
-# ============================================================
 # Pytest fixtures (importable via conftest or direct import)
-# ============================================================
 
 @pytest.fixture
 def fake_client() -> FakeAIClient:

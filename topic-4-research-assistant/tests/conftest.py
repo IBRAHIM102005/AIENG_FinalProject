@@ -31,15 +31,6 @@ mock_fetch_arxiv    â€” AsyncMock returning fake_arxiv_sources.
 mock_fetch_web      â€” AsyncMock returning web-only sample_source.
 event_loop          â€” Session-scoped asyncio loop for pytest-asyncio.
 
-Design notes
-------------
-* FakeLLM and FakeWebSearch are defined **here** (not re-imported from
-  ``tests/test_ai_smoke.py``) so all four test modules import stubs from one
-  canonical location, preventing drift between copies.
-* All database fixtures use ``:memory:`` SQLite so tests are isolated,
-  fast, and leave no files on disk.
-* The ``event_loop`` fixture is session-scoped to allow async fixtures to
-  share state across tests without creating multiple loops.
 """
 
 from __future__ import annotations

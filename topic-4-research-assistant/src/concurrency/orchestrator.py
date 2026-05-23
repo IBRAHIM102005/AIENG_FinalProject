@@ -137,14 +137,19 @@ async def fetch_selected_sources(
             logger.warning("source_fetch_failed source=%s elapsed=%.3f error=%s", name, elapsed, exc)
             return name, exc, elapsed
 
-    results = await asyncio.gather(*(run_one(name) for name in selected), return_exceptions=False)
+    results = await asyncio.gather(*(run_one(name) for name in selected), return_exceptions=True)
 
     combined: list[Source] = []
     failures: list[SourceFailure] = []
     timings: dict[SourceName, float] = {}
     seen_urls: set[str] = set()
 
-    for name, payload, elapsed in results:
+    for item in results:
+        if isinstance(item, Exception):
+            failures.append(SourceFailure(source="orchestrator", error=str(item), elapsed_seconds=0.0))
+            continue
+
+        name, payload, elapsed = item
         timings[name] = elapsed
         if isinstance(payload, Exception):
             failures.append(SourceFailure(source=name, error=str(payload), elapsed_seconds=elapsed))

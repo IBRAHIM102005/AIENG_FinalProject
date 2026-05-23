@@ -22,6 +22,12 @@ values from `.env`.
 Run a deterministic offline question:
 
 ```powershell
+python -m researcher ask "What is photosynthesis?" --offline --limit 2
+```
+
+The implementation also works through the package module:
+
+```powershell
 python -m src.cli ask "What is photosynthesis?" --offline --limit 2
 ```
 
@@ -42,6 +48,15 @@ Compare sequential and parallel source fetching:
 python scripts\bench.py
 ```
 
+Current measured result on the submission machine:
+
+```text
+Mode        Time (s)
+Sequential  1.680
+Parallel    0.653
+Speedup     2.57x
+```
+
 Run the sample questions:
 
 ```powershell
@@ -57,7 +72,19 @@ pytest -q
 Current verified result:
 
 ```text
-194 passed
+196 passed
+```
+
+Coverage command:
+
+```powershell
+pytest --cov=src --cov-report=term-missing -q
+```
+
+Current verified coverage:
+
+```text
+TOTAL 864 statements, 187 missed, 78% coverage
 ```
 
 ## Architecture

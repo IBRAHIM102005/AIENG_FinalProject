@@ -23,9 +23,7 @@ All files in this directory are **git-ignored** (see `.gitignore`) except this
 | `docker_run_help.log` | Default CLI help from inside the container | `docker run --rm researcher:latest 2>&1 \| tee artefacts/docker_run_help.log` |
 | `docker_run_tests.log` | Test suite run inside the container | `docker run --rm researcher:latest pytest tests/ -v 2>&1 \| tee artefacts/docker_run_tests.log` |
 | `docker_images.txt` | Image size verification (`~280 MB`) | `docker images researcher 2>&1 \| tee artefacts/docker_images.txt` |
-| `cli_ask_demo.log` | CLI `ask` command output (requires keys) | `python -m src.cli ask "What is CRISPR?" 2>&1 \| tee artefacts/cli_ask_demo.log` |
-| `cli_sessions_list.log` | `sessions list` command output | `python -m src.cli sessions list 2>&1 \| tee artefacts/cli_sessions_list.log` |
-| `cli_cache_stats.log` | `cache stats` command output | `python -m src.cli cache stats 2>&1 \| tee artefacts/cli_cache_stats.log` |
+| `cli_ask_demo.log` | CLI `ask` command output (requires keys unless `--offline` is used) | `python -m researcher ask "What is CRISPR?" --offline 2>&1 \| tee artefacts/cli_ask_demo.log` |
 
 ---
 
@@ -54,7 +52,7 @@ For the submission report, include screenshots of:
 
 4. **CLI demo** — Run:
    ```bash
-   python -m src.cli ask "What is quantum computing?" --sources wiki,arxiv
+   python -m researcher ask "What is quantum computing?" --sources wiki,arxiv
    ```
    Screenshot showing the formatted answer with numbered citations.
 

@@ -1,23 +1,10 @@
-# Dependencies needed to RUN the provided ai/ package.
-# Add your own SE-layer dependencies (tenacity, asyncpg, fastapi/click, etc.)
-# to your project's main requirements.txt.
-
-httpx>=0.27         # async HTTP for the source fetchers
-numpy>=1.24         # imported by the shared provider base classes
-pydantic>=2.7
-
-# Pick ONE or more LLM providers depending on what you'll use:
-anthropic>=0.39.0      ; extra == "anthropic"
-openai>=1.50.0         ; extra == "openai"
-google-genai>=0.3.0    ; extra == "gemini"
-
-# Pick ONE web search provider:
-# Tavily and Serper are accessed via plain httpx (already required) — no extra package.
-duckduckgo-search>=6.0 ; extra == "duckduckgo"
-
-# Smoke tests
-pytest>=8.0
-pytest-asyncio>=0.23
+# =============================================================================
+# Async Research Assistant — requirements.txt
+# Python 3.12+   |   Exact versions for reproducible builds
+#
+# Install:   pip install -r requirements.txt
+# Dev setup: pip install -r requirements.txt && cp .env.example .env
+# =============================================================================
 
 # ---------------------------------------------------------------------------
 # Async HTTP (source fetchers + shared connection pool)
@@ -39,6 +26,8 @@ python-dotenv==1.1.0
 # CLI (Üzv B: src/cli.py)
 # ---------------------------------------------------------------------------
 click==8.1.8
+fastapi==0.115.12
+uvicorn==0.34.2
 
 # ---------------------------------------------------------------------------
 # Retries with exponential back-off (src/services/ai_service.py, orchestrator)
